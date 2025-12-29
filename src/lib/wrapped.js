@@ -34,17 +34,29 @@ export async function buildWrapped(entryId) {
     const picksMap = new Map();
     const liveMap = new Map();
 
-    const batchSize = 5;
+    const batchSize = 3; // Reduced from 5 to 3 for safety
     for (let i = 0; i < gwIds.length; i += batchSize) {
-        const batch = gwIds.slice(i, i + batchSize);
-        await Promise.all(batch.map(async (gw) => {
-            try {
-                const [p, l] = await Promise.all([fetchPicks(entryId, gw), fetchLive(gw)]);
-                if(p) picksMap.set(gw, p);
-                if(l) liveMap.set(gw, l);
-            } catch (e) { console.warn(`GW${gw} missing`); }
-        }));
+    const batch = gwIds.slice(i, i + batchSize);
+    
+    await Promise.all(batch.map(async (gw) => {
+        try {
+            // Fetch Picks and Live data for this GW
+            const [p, l] = await Promise.all([
+                fetchPicks(entryId, gw), 
+                fetchLive(gw)
+            ]);
+            
+            if(p) picksMap.set(gw, p);
+            if(l) liveMap.set(gw, l);
+        } catch (e) { 
+            console.warn(`GW${gw} missing`, e); 
+        }
+    }));
+
+    // CRITICAL: Wait 250ms between batches to avoid 403 Ban
+    await new Promise(r => setTimeout(r, 250));
     }
+
 
     const elMap = new Map((bootstrap.elements || []).map((e) => [e.id, e]));
     const getPlayer = (id) => elMap.get(id) || { web_name: "Unknown", selected_by_percent: "0", element_type: 1, team: 0 };
