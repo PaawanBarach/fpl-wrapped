@@ -390,7 +390,7 @@ export async function buildWrapped(entryId) {
 
 async function fetchLive(gw) {
   try {
-    const res = await fetch(`/api/event/${gw}/live/`);
+    const res = await fetch(`/api/proxy?endpoint=event/${gw}/live/`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (e) { return null; }
